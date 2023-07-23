@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GenePT</title>
+  <style>
+    #dialogue {
+      height: 60vh;
+      overflow: auto;
+      border: 1px solid;
+      padding: 10px;
+      margin-bottom: 10px;
+      font-size: 30px;
+    }
+    .user-message {
+      text-align: left;
+      color: blue;
+      font-size: 16px;
+    }
+    .system-message {
+      text-align: left;
+      color: green;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Welcome to GenePT</h1>
+
+  <div id="dialogue"></div>
+
+  <label for="query">Enter your query:</label><br>
+  <textarea id="query" name="query" rows="4" cols="100"></textarea><br>
+
+  <button onclick="submitQuery()">Submit</button><br>
+
+  <script>
+  async function submitQuery() {
+    const queryField = document.querySelector('#query');
+    const dialogue = document.querySelector('#dialogue');
+    const query = queryField.value;
+    queryField.value = ''; // Clear the input field
+
+    // Append the user's query to the dialogue
+    const userMessage = document.createElement('p');
+    userMessage.textContent = query;
+    userMessage.classList.add('user-message');
+    dialogue.appendChild(userMessage);
+
+    // Scroll to the bottom of the dialogue
+    dialogue.scrollTop = dialogue.scrollHeight;
+
+    // Append a "typing" indicator
+    const typingIndicator = document.createElement('p');
+    const typingDot = ' .';
+    let typingDotCount = 0;
+    typingIndicator.textContent = 'System is typing' + typingDot.repeat(typingDotCount);
+    typingIndicator.classList.add('system-message');
+    dialogue.appendChild(typingIndicator);
+
+    // Scroll to the bottom of the dialogue
+    dialogue.scrollTop = dialogue.scrollHeight;
+
+    let typing = setInterval(() => {
+      typingDotCount = (typingDotCount + 1) % 4; // cycle from 0 to 3
+      typingIndicator.textContent = 'System is typing' + typingDot.repeat(typingDotCount);
+    }, 500); // update every 500ms
+
+    const res = await fetch('http://127.0.0.1:8000/query', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ query: query })
+    });
+
+    clearInterval(typing); // stop the "typing" indicator
+
+    if (res.ok) {
+      const data = await res.json();
+      console.log('Response data:', data);
+
+      // Replace the "processing" message with the response
+      typingIndicator.textContent = data.answer;
+
+      // Scroll to the bottom of the dialogue
+    dialogue.scrollTop = dialogue.scrollHeight;
+    } else {
+      console.error('Error:', res.status, res.statusText);
+
+      // Replace the "processing" message with an error message
+      typing.textContent = 'An error occurred. Please try again.';
+    }
+
+    // Scroll to the bottom of the dialogue
+    dialogue.scrollTop = dialogue.scrollHeight;
+  }
+  </script>
+</body>
+</html>
